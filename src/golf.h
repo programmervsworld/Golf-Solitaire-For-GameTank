@@ -4,14 +4,26 @@
 #include "gametank.h"
 #include "gt/feature/random/random.h"
 #include "gt/gfx/draw_queue.h"
-#include "input.h"
 #include "../gen/assets/cardframes.h"
 #include "../gen/assets/backgrounds.h"
+#include "gt/input.h"
+#include "input.h"
 
 #define TABLEAU_COLS 7
 #define TABLEAU_ROWS 5
 #define TABLEAU_Y_SHIFT 12
 #define TABLEAU_X_SHIFT 1
+#define DISCARD_PILE_X 16
+#define DISCARD_PILE_Y 104
+#define FLIPPED_PILE_X 32
+#define FLIPPED_PILE_Y 104
+#define DISCARD_BEGINS 35
+#define SHUFFLE_SEED 9
+
+typedef struct {
+  char row;
+  char card;
+} CardPosition;
 
 // The is the deck that we deal from and where the next discard will come from
 unsigned char deck[52];
@@ -23,9 +35,15 @@ char animationy[52];
 char directionx[52];
 char directiony[52];
 char remainingCardCount;
+char cursorRow = TABLEAU_ROWS - 1;
+char cursorCol = 0;
+char discardPtr = 0;
+
+bool isOnBoard = true;
 
 SpriteSlot background;
 SpriteSlot cardSprites;
+CardPosition eligibileCards[7];
 
 void loadPyramidDeck(unsigned char *deck) {
   char i = 0;
@@ -48,6 +66,70 @@ void loadPyramidBoard() {
     }
   }
   remainingCardCount = num;
+  discardPtr = DISCARD_BEGINS;
+}
+
+void shufflePyramidDeck(unsigned char *cards, unsigned char times) {
+  char valueToSwap;
+  char indexToSwap;
+  char i, t;
+
+  for (t = 0; t < times; t++) {
+    for (i = 0; i < 51; i++) {
+      indexToSwap = rnd_range(1, 50);
+      valueToSwap = cards[indexToSwap];
+      cards[indexToSwap] = cards[1];
+      cards[1] = valueToSwap;
+    }
+  }
+}
+
+CardPosition findNextPositionToTheRight(){
+    char found, row, col;
+    CardPosition pos;
+    for(col = cursorCol+1; col < TABLEAU_COLS; col++){
+        for(row = TABLEAU_ROWS - 1; row > 0; row--){
+            if(board[row][col] > 0){
+                pos.card = col;
+                pos.row = row;
+                return pos;
+            }
+        }
+    }
+    return pos;
+}
+
+CardPosition findNextPositionToTheLeft(){
+    char found, row, col;
+    CardPosition pos;
+    for(col = cursorCol-1; col >= 0; col--){
+        for(row = TABLEAU_ROWS - 1; row > 0; row--){
+            if(board[row][col] > 0){
+                pos.card = col;
+                pos.row = row;
+                return pos;
+            }
+        }
+    }
+    return pos;
+}
+
+void checkInput() {
+   CardPosition newPos;
+   if (player1_new_buttons & INPUT_MASK_RIGHT){
+       if(cursorCol + 1 < TABLEAU_COLS){
+           newPos = findNextPositionToTheRight();
+           cursorCol = newPos.card;
+           cursorRow = newPos.row;
+       }
+   } else if (player1_new_buttons & INPUT_MASK_LEFT){
+       if(cursorCol > 0){
+          newPos = findNextPositionToTheLeft();
+          cursorCol = newPos.card;
+          cursorRow = newPos.row;
+       }
+   }
+
 }
 
 void renderGolfBoardNormal(){
@@ -57,18 +139,50 @@ void renderGolfBoardNormal(){
         cardy = 12 * (rows+1);
         for(cols = 0; cols < TABLEAU_COLS; cols++){
             cardx = 16 * (cols+1);
-            queue_draw_sprite_frame(cardSprites, cardx - TABLEAU_X_SHIFT, cardy + TABLEAU_Y_SHIFT, board[rows][cols], false);
+            if(board[rows][cols] != 0){
+                if(cursorRow == rows && cursorCol == cols && isOnBoard){
+                    queue_draw_box(
+                        (cardx - TABLEAU_X_SHIFT) - 8,
+                        (cardy + TABLEAU_Y_SHIFT) - 8,
+                        16, 16, rnd_range(0,255));
+                }
+                     
+                queue_draw_sprite_frame(
+                    cardSprites,
+                    cardx - TABLEAU_X_SHIFT,
+                    cardy + TABLEAU_Y_SHIFT,
+                    board[rows][cols], false);
+                
+            } 
         }
     }    
+    queue_draw_sprite_frame(cardSprites, DISCARD_PILE_X, DISCARD_PILE_Y, 0, false);
+    queue_draw_sprite_frame(cardSprites, FLIPPED_PILE_X, FLIPPED_PILE_Y, deck[discardPtr], false);
+    checkInput();
 }
 
 void initalizeGolfScene() {
+    char testrow;
     background = allocate_sprite(&ASSET__backgrounds__background_bmp_load_list);
     cardSprites = allocate_sprite(&ASSET__cardframes__frame_deck_bmp_load_list);
     set_sprite_frametable(cardSprites, &ASSET__cardframes__frame_deck_json);
     
     loadPyramidDeck(deck);
+    shufflePyramidDeck(deck, SHUFFLE_SEED);
     loadPyramidBoard();
+    
+    //Some testing code that omits some cards to test selection hopping
+    /*board[TABLEAU_ROWS - 1][5]=0;
+    board[TABLEAU_ROWS - 2][5]=0;
+    board[TABLEAU_ROWS - 3][5]=0;
+    board[TABLEAU_ROWS - 4][5]=0;
+    board[TABLEAU_ROWS - 5][5]=0;
+    
+    board[TABLEAU_ROWS - 1][6]=0;
+    board[TABLEAU_ROWS - 2][6]=0;
+    board[TABLEAU_ROWS - 3][6]=0;
+    board[TABLEAU_ROWS - 4][6]=0;
+    board[TABLEAU_ROWS - 5][6]=0;*/
 }
 
 void renderGolfBoard() {
@@ -86,6 +200,7 @@ void renderGolfBoard() {
         await_vsync(1);
         flip_pages();
         tick_music();
+        update_inputs();
     }
 }
 
