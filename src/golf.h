@@ -40,7 +40,7 @@ char cursorCol = 0;
 char discardPtr = 0; // This points to where in the deck the next flip is
 char discard =
     0; // This points to what is current showing at the top of the discare pile
-char currentUpValue = 0;
+char discardValue = 0;
 
 bool isOnBoard = true;
 
@@ -48,11 +48,17 @@ SpriteSlot background;
 SpriteSlot cardSprites;
 CardPosition eligibileCards[7];
 
+/*
+% 13 may compile to relatively expensive division code on an 8-bit target. Since
+this only maps 1-52 to 1-13, a small branch version may be cheaper:
+*/
 unsigned char getCardValueFromNo(unsigned char cardNo) {
-  return ((cardNo - 1) % 13) + 1;
+  while (cardNo > 13)
+    cardNo -= 13;
+  return cardNo;
 }
 
-void loadPyramidDeck(unsigned char *deck) {
+void loadGolfDeck(unsigned char *deck) {
   char i = 0;
   for (i = 1; i <= 52; i++) {
     deck[i - 1] = i;
@@ -63,7 +69,7 @@ void loadPyramidDeck(unsigned char *deck) {
   }
 }
 
-void loadPyramidBoard() {
+void loadGolfBoard() {
   char r, c, num, counter;
   num = 0;
   for (r = 0; r < TABLEAU_ROWS; r++) {
@@ -75,9 +81,10 @@ void loadPyramidBoard() {
   remainingCardCount = num;
   discardPtr = DISCARD_BEGINS;
   discard = deck[discardPtr];
+  discardValue = discard;
 }
 
-void shufflePyramidDeck(unsigned char *cards, unsigned char times) {
+void shuffleGolfDeck(unsigned char *cards, unsigned char times) {
   char valueToSwap;
   char indexToSwap;
   char i, t;
@@ -93,7 +100,7 @@ void shufflePyramidDeck(unsigned char *cards, unsigned char times) {
 }
 
 CardPosition findNextPositionToTheRight() {
-  char found, row, col;
+  char row, col;
   CardPosition pos;
   for (col = cursorCol + 1; col < TABLEAU_COLS; col++) {
     for (row = TABLEAU_ROWS - 1; row >= 0; row--) {
@@ -108,7 +115,7 @@ CardPosition findNextPositionToTheRight() {
 }
 
 CardPosition findNextPositionToTheLeft() {
-  char found, row, col;
+  char row, col;
   CardPosition pos;
   for (col = cursorCol - 1; col >= 0; col--) {
     for (row = TABLEAU_ROWS - 1; row >= 0; row--) {
@@ -122,12 +129,8 @@ CardPosition findNextPositionToTheLeft() {
   return pos;
 }
 
-bool canMove(unsigned char discard, unsigned char newChar) {
-  bool canMove = false;
-  if (discard == newChar - 1 || discard == newChar + 1) {
-    return true;
-  }
-  return canMove;
+bool canMove(unsigned char discard, unsigned char cardValue) {
+  return discardValue + 1 == cardValue || discardValue == cardValue + 1;
 }
 
 void checkInput() {
@@ -146,8 +149,10 @@ void checkInput() {
     }
   } else if (player1_new_buttons & INPUT_MASK_A) {
     char selection = board[cursorRow][cursorCol];
-    if (canMove(getCardValueFromNo(discard), getCardValueFromNo(selection))) {
+    char selectionValue = getCardValueFromNo(selection);
+    if (canMove(discardValue, selectionValue)) {
       discard = selection;
+      discardValue = selectionValue;
       board[cursorRow][cursorCol] = 0;
       if (cursorRow > 0) {
         cursorRow--;
@@ -184,14 +189,13 @@ void renderGolfBoardNormal() {
 }
 
 void initalizeGolfScene() {
-  char testrow;
   background = allocate_sprite(&ASSET__backgrounds__background_bmp_load_list);
   cardSprites = allocate_sprite(&ASSET__cardframes__frame_deck_bmp_load_list);
   set_sprite_frametable(cardSprites, &ASSET__cardframes__frame_deck_json);
 
-  loadPyramidDeck(deck);
-  shufflePyramidDeck(deck, SHUFFLE_SEED);
-  loadPyramidBoard();
+  loadGolfDeck(deck);
+  shuffleGolfDeck(deck, SHUFFLE_SEED);
+  loadGolfBoard();
 
   // Some testing code that omits some cards to test selection hopping
   /*board[TABLEAU_ROWS - 1][5]=0;
