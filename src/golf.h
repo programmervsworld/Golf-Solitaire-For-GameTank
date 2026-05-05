@@ -5,6 +5,7 @@
 #include "../gen/assets/cardframes.h"
 #include "gametank.h"
 #include "gt/feature/random/random.h"
+#include "gt/feature/text/text.h"
 #include "gt/gfx/draw_queue.h"
 #include "gt/input.h"
 #include "input.h"
@@ -47,6 +48,7 @@ bool isOnBoard = true;
 SpriteSlot background;
 SpriteSlot cardSprites;
 CardPosition eligibileCards[7];
+SpriteSlot font;
 
 /*
 % 13 may compile to relatively expensive division code on an 8-bit target. Since
@@ -81,7 +83,7 @@ void loadGolfBoard() {
   remainingCardCount = num;
   discardPtr = DISCARD_BEGINS;
   discard = deck[discardPtr];
-  discardValue = discard;
+  discardValue = getCardValueFromNo(discard);
 }
 
 void shuffleGolfDeck(unsigned char *cards, unsigned char times) {
@@ -192,7 +194,7 @@ void initalizeGolfScene() {
   background = allocate_sprite(&ASSET__backgrounds__background_bmp_load_list);
   cardSprites = allocate_sprite(&ASSET__cardframes__frame_deck_bmp_load_list);
   set_sprite_frametable(cardSprites, &ASSET__cardframes__frame_deck_json);
-
+  font = text_load_font();
   loadGolfDeck(deck);
   shuffleGolfDeck(deck, SHUFFLE_SEED);
   loadGolfBoard();
@@ -214,7 +216,7 @@ void initalizeGolfScene() {
 void renderGolfBoard() {
   bool isRunning = true;
   initalizeGolfScene();
-
+  text_init();
   while (isRunning) {
     queue_clear_screen(187);
     queue_clear_border(186);
