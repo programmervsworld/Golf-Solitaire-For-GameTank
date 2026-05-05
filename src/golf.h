@@ -4,6 +4,7 @@
 #include "../gen/assets/backgrounds.h"
 #include "../gen/assets/cardframes.h"
 #include "gametank.h"
+#include "gt/audio/music.h"
 #include "gt/feature/random/random.h"
 #include "gt/feature/text/text.h"
 #include "gt/gfx/draw_queue.h"
@@ -42,8 +43,7 @@ char discardPtr = 0; // This points to where in the deck the next flip is
 char discard =
     0; // This points to what is current showing at the top of the discare pile
 char discardValue = 0;
-
-bool isOnBoard = true;
+unsigned char remainingCards = 35;
 
 SpriteSlot background;
 SpriteSlot cardSprites;
@@ -104,8 +104,13 @@ void shuffleGolfDeck(unsigned char *cards, unsigned char times) {
 CardPosition findNextPositionToTheRight() {
   char row, col;
   CardPosition pos;
+  pos.card = cursorCol;
+  pos.row = cursorRow;
+
   for (col = cursorCol + 1; col < TABLEAU_COLS; col++) {
-    for (row = TABLEAU_ROWS - 1; row >= 0; row--) {
+    row = TABLEAU_ROWS;
+    while (row > 0) {
+      row--;
       if (board[row][col] > 0) {
         pos.card = col;
         pos.row = row;
@@ -119,8 +124,15 @@ CardPosition findNextPositionToTheRight() {
 CardPosition findNextPositionToTheLeft() {
   char row, col;
   CardPosition pos;
-  for (col = cursorCol - 1; col >= 0; col--) {
-    for (row = TABLEAU_ROWS - 1; row >= 0; row--) {
+  pos.card = cursorCol;
+  pos.row = cursorRow;
+
+  col = cursorCol;
+  while (col > 0) {
+    col--;
+    row = TABLEAU_ROWS;
+    while (row > 0) {
+      row--;
       if (board[row][col] > 0) {
         pos.card = col;
         pos.row = row;
@@ -138,7 +150,7 @@ bool canMove(unsigned char discard, unsigned char cardValue) {
 void checkInput() {
   CardPosition newPos;
   if (player1_new_buttons & INPUT_MASK_RIGHT) {
-    if (cursorCol < TABLEAU_COLS) {
+    if (cursorCol < TABLEAU_COLS - 1) {
       newPos = findNextPositionToTheRight();
       cursorCol = newPos.card;
       cursorRow = newPos.row;
@@ -152,13 +164,20 @@ void checkInput() {
   } else if (player1_new_buttons & INPUT_MASK_A) {
     char selection = board[cursorRow][cursorCol];
     char selectionValue = getCardValueFromNo(selection);
-    if (canMove(discardValue, selectionValue)) {
-      discard = selection;
-      discardValue = selectionValue;
-      board[cursorRow][cursorCol] = 0;
-      if (cursorRow > 0) {
-        cursorRow--;
-      }
+    // if (canMove(discardValue, selectionValue)) {
+    discard = selection;
+    discardValue = selectionValue;
+    board[cursorRow][cursorCol] = 0;
+    remainingCards--;
+    if (cursorRow > 0) {
+      cursorRow--;
+    }
+    //}
+  } else if (player1_new_buttons & INPUT_MASK_C) {
+    if (discardPtr < 52) {
+      discardPtr++;
+      discard = deck[discardPtr];
+      discardValue = getCardValueFromNo(discard);
     }
   }
 }
@@ -170,13 +189,12 @@ void renderGolfBoardNormal() {
     cardy = 12 * (rows + 1);
     for (cols = 0; cols < TABLEAU_COLS; cols++) {
       cardx = 16 * (cols + 1);
+      if (cursorRow == rows && cursorCol == cols) {
+        queue_draw_box((cardx - TABLEAU_X_SHIFT) - 8,
+                       (cardy + TABLEAU_Y_SHIFT) - 8, 16, 16,
+                       rnd_range(0, 255));
+      }
       if (board[rows][cols] != 0) {
-        if (cursorRow == rows && cursorCol == cols && isOnBoard) {
-          queue_draw_box((cardx - TABLEAU_X_SHIFT) - 8,
-                         (cardy + TABLEAU_Y_SHIFT) - 8, 16, 16,
-                         rnd_range(0, 255));
-        }
-
         queue_draw_sprite_frame(cardSprites, cardx - TABLEAU_X_SHIFT,
                                 cardy + TABLEAU_Y_SHIFT, board[rows][cols],
                                 false);
@@ -215,6 +233,8 @@ void initalizeGolfScene() {
 
 void renderGolfBoard() {
   bool isRunning = true;
+  char score[4];
+
   initalizeGolfScene();
   text_init();
   while (isRunning) {
@@ -222,6 +242,13 @@ void renderGolfBoard() {
     queue_clear_border(186);
 
     renderGolfBoardNormal();
+
+    text_cursor_x = 55;
+    text_cursor_y = 100;
+
+    text_sprint_num(score, remainingCards);
+    text_print_string("Left: ");
+    text_print_string(score);
 
     await_draw_queue();
     await_vsync(1);
