@@ -50,6 +50,8 @@ SpriteSlot cardSprites;
 CardPosition eligibileCards[7];
 SpriteSlot font;
 
+bool isRunning = true;
+
 /*
 % 13 may compile to relatively expensive division code on an 8-bit target. Since
 this only maps 1-52 to 1-13, a small branch version may be cheaper:
@@ -164,20 +166,22 @@ void checkInput() {
   } else if (player1_new_buttons & INPUT_MASK_A) {
     char selection = board[cursorRow][cursorCol];
     char selectionValue = getCardValueFromNo(selection);
-    // if (canMove(discardValue, selectionValue)) {
-    discard = selection;
-    discardValue = selectionValue;
-    board[cursorRow][cursorCol] = 0;
-    remainingCards--;
-    if (cursorRow > 0) {
-      cursorRow--;
+    if (canMove(discardValue, selectionValue)) {
+      discard = selection;
+      discardValue = selectionValue;
+      board[cursorRow][cursorCol] = 0;
+      remainingCards--;
+      if (cursorRow > 0) {
+        cursorRow--;
+      }
     }
-    //}
   } else if (player1_new_buttons & INPUT_MASK_C) {
     if (discardPtr < 52) {
       discardPtr++;
       discard = deck[discardPtr];
       discardValue = getCardValueFromNo(discard);
+    }else{
+      isRunning = false;
     }
   }
 }
@@ -216,23 +220,10 @@ void initalizeGolfScene() {
   loadGolfDeck(deck);
   shuffleGolfDeck(deck, SHUFFLE_SEED);
   loadGolfBoard();
-
-  // Some testing code that omits some cards to test selection hopping
-  /*board[TABLEAU_ROWS - 1][5]=0;
-  board[TABLEAU_ROWS - 2][5]=0;
-  board[TABLEAU_ROWS - 3][5]=0;
-  board[TABLEAU_ROWS - 4][5]=0;
-  board[TABLEAU_ROWS - 5][5]=0;
-
-  board[TABLEAU_ROWS - 1][6]=0;
-  board[TABLEAU_ROWS - 2][6]=0;
-  board[TABLEAU_ROWS - 3][6]=0;
-  board[TABLEAU_ROWS - 4][6]=0;
-  board[TABLEAU_ROWS - 5][6]=0;*/
 }
 
 void renderGolfBoard() {
-  bool isRunning = true;
+  
   char score[4];
 
   initalizeGolfScene();

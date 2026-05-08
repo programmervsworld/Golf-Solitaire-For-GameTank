@@ -4,14 +4,14 @@
 #include "gt/feature/random/random.h"
 #include "gt/gametank.h"
 #include "gt/gfx/draw_queue.h"
+#include "intro.h"
 
 char box_x = 30, box_y = 20;
 char dx = 1, dy = 1;
 
 void main() {
 
-  // TODO: make the intro screen change this value
-  char seed = 2;
+  char seed = renderIntroScreen();
   rnd_seed = seed;
 
   init_audio_coprocessor();
@@ -19,5 +19,6 @@ void main() {
 
   while (1) {
     renderGolfBoard();
+    rnd_seed = renderLoseScreen();
   }
 }
