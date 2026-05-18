@@ -47,6 +47,7 @@ unsigned char remainingCards = 35;
 
 SpriteSlot background;
 SpriteSlot cardSprites;
+SpriteSlot winBack;
 CardPosition eligibileCards[7];
 SpriteSlot font;
 
@@ -61,6 +62,9 @@ unsigned char getCardValueFromNo(unsigned char cardNo) {
     cardNo -= 13;
   return cardNo;
 }
+
+bool hasWon() { return remainingCards == 0; }
+bool hasLost() { return discardPtr == 52; }
 
 void loadGolfDeck(unsigned char *deck) {
   char i = 0;
@@ -176,12 +180,10 @@ void checkInput() {
       }
     }
   } else if (player1_new_buttons & INPUT_MASK_C) {
-    if (discardPtr < 52) {
+    if (!hasLost()) {
       discardPtr++;
       discard = deck[discardPtr];
       discardValue = getCardValueFromNo(discard);
-    }else{
-      isRunning = false;
     }
   }
 }
@@ -213,6 +215,7 @@ void renderGolfBoardNormal() {
 }
 
 void initalizeGolfScene() {
+  isRunning = true;
   background = allocate_sprite(&ASSET__backgrounds__background_bmp_load_list);
   cardSprites = allocate_sprite(&ASSET__cardframes__frame_deck_bmp_load_list);
   set_sprite_frametable(cardSprites, &ASSET__cardframes__frame_deck_json);
@@ -222,8 +225,48 @@ void initalizeGolfScene() {
   loadGolfBoard();
 }
 
+void checkInputFromWin() {
+  if (player1_new_buttons & INPUT_MASK_START) {
+    initalizeGolfScene();
+  }
+}
+
+void renderWinSequence() {
+
+  char deckpos;
+  // queue_clear_screen(rnd_range(0, 255));
+  // queue_draw_sprite(0, 0, 127, 127, 0, 0, winBack);
+
+  for (deckpos = 0; deckpos < 52; deckpos++) {
+    if (directionx[deckpos] == 0)
+      directionx[deckpos] = 1;
+    if (directiony[deckpos] == 0)
+      directiony[deckpos] = 1;
+    animationx[deckpos] += directionx[deckpos];
+    animationy[deckpos] += directiony[deckpos];
+
+    if (animationx[deckpos] == 8) {
+      directionx[deckpos] = 1;
+    } else if (animationx[deckpos] == 120) {
+      directionx[deckpos] = -1;
+    }
+
+    if (animationy[deckpos] == 8) {
+      directiony[deckpos] = 1;
+    } else if (animationy[deckpos] == 112) {
+      directiony[deckpos] = -1;
+    }
+
+    queue_draw_sprite_frame(cardSprites, animationx[deckpos],
+                            animationy[deckpos], deckpos, false);
+    // queue_draw_sprite_frame(testSlot, rnd_range(8, 110), rnd_range(8, 110),
+    // deckpos, false);
+  }
+  checkInputFromWin();
+}
+
 void renderGolfBoard() {
-  
+
   char score[4];
 
   initalizeGolfScene();
@@ -232,14 +275,13 @@ void renderGolfBoard() {
     queue_clear_screen(187);
     queue_clear_border(186);
 
-    renderGolfBoardNormal();
-
-    text_cursor_x = 55;
-    text_cursor_y = 100;
-
-    text_sprint_num(score, remainingCards);
-    text_print_string("Left: ");
-    text_print_string(score);
+    if (hasWon()) {
+      renderWinSequence();
+    } else if (hasLost()) {
+      isRunning = false;
+    } else {
+      renderGolfBoardNormal();
+    }
 
     await_draw_queue();
     await_vsync(1);

@@ -1,4 +1,4 @@
-# My GameTank Game
+# Golf Solitaire For GameTank
 
 Build it with the "make" command
 

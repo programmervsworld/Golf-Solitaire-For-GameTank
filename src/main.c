@@ -12,6 +12,9 @@ char dx = 1, dy = 1;
 void main() {
 
   char seed = renderIntroScreen();
+  queue_clear_screen(187);
+  queue_clear_border(186);
+
   rnd_seed = seed;
 
   init_audio_coprocessor();
