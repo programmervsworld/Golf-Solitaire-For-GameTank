@@ -3,6 +3,7 @@
 
 #include "../gen/assets/backgrounds.h"
 #include "../gen/assets/sfx.h"
+#include "../gen/assets/music.h"
 #include "gt/gametank.h"
 #include "gt/gfx/draw_queue.h"
 #include "input.h"
@@ -17,13 +18,14 @@ char seed = 0;
 void initializeIntroScreen() {
   background = allocate_sprite(&ASSET__backgrounds__intro_bmp_load_list);
   loseback = allocate_sprite(&ASSET__backgrounds__lose_bmp_load_list);
+  play_song(&ASSET__music__paparazzi_mid, REPEAT_LOOP);
 }
 
 void checkIntroInput() {
   if (player1_new_buttons & INPUT_MASK_START) {
-    play_sound_effect(ASSET__sfx__blip2_sfx_ID, 1);
     isOnIntro = false;
     isOnLose = false;
+    stop_music();
   }
 }
 
