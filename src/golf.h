@@ -99,6 +99,7 @@ void shuffleGolfDeck(unsigned char *cards, unsigned char times) {
   char i, t;
 
   for (t = 0; t < times; t++) {
+    play_sound_effect(ASSET__sfx__flip_sfx_ID, 1);
     for (i = 0; i < 51; i++) {
       indexToSwap = rnd_range(1, 50);
       valueToSwap = cards[indexToSwap];
@@ -188,6 +189,8 @@ void checkInput() {
       discard = deck[discardPtr];
       discardValue = getCardValueFromNo(discard);
     }
+  } else if (player1_new_buttons & INPUT_MASK_B) {
+      //remainingCards = 0;
   }
 }
 
@@ -230,6 +233,7 @@ void initalizeGolfScene() {
 
 void checkInputFromWin() {
   if (player1_new_buttons & INPUT_MASK_START) {
+    remainingCards=1;
     initalizeGolfScene();
   }
 }
