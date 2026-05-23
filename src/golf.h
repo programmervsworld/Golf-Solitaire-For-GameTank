@@ -3,6 +3,7 @@
 
 #include "../gen/assets/backgrounds.h"
 #include "../gen/assets/cardframes.h"
+#include "../gen/assets/sfx.h"
 #include "gametank.h"
 #include "gt/audio/music.h"
 #include "gt/feature/random/random.h"
@@ -171,6 +172,7 @@ void checkInput() {
     char selection = board[cursorRow][cursorCol];
     char selectionValue = getCardValueFromNo(selection);
     if (canMove(discardValue, selectionValue)) {
+      play_sound_effect(ASSET__sfx__dog_sfx_ID,1);
       discard = selection;
       discardValue = selectionValue;
       board[cursorRow][cursorCol] = 0;
@@ -181,6 +183,7 @@ void checkInput() {
     }
   } else if (player1_new_buttons & INPUT_MASK_C) {
     if (!hasLost()) {
+      play_sound_effect(ASSET__sfx__click_sfx_ID, 1);
       discardPtr++;
       discard = deck[discardPtr];
       discardValue = getCardValueFromNo(discard);
