@@ -75,6 +75,10 @@ BANKS = $(patsubst %,$(ROMDIR)/$(TARGET).%,$(_BANKS))
 $(ROMDIR)/$(TARGET): $(ODIR)/bankMakeList.inc $(BANKS)
 	cat $(BANKS) > $@
 
+# Game logic lives in headers included by main.c. Recompile when they change,
+# including when the intermediate main.si has already been removed by make.
+$(ODIR)/main.si $(ODIR)/main.o: $(SDIR)/golf.h $(SDIR)/intro.h
+
 $(info ASSETOBJS is $(ASSETOBJS))
 
 $(BANKS): $(ODIR)/bankMakeList.inc $(ASSETOBJS) $(AOBJS) $(COBJS) $(ODIR)/gametank-2M.cfg

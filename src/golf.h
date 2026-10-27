@@ -37,7 +37,6 @@ char animationx[52];
 char animationy[52];
 char directionx[52];
 char directiony[52];
-char remainingCardCount;
 char cursorRow = TABLEAU_ROWS - 1;
 char cursorCol = 0;
 char discardPtr = 0; // This points to where in the deck the next flip is
@@ -87,7 +86,9 @@ void loadGolfBoard() {
       num++;
     }
   }
-  remainingCardCount = num;
+  remainingCards = num;
+  cursorRow = TABLEAU_ROWS - 1;
+  cursorCol = 0;
   discardPtr = DISCARD_BEGINS;
   discard = deck[discardPtr];
   discardValue = getCardValueFromNo(discard);
@@ -233,7 +234,6 @@ void initalizeGolfScene() {
 
 void checkInputFromWin() {
   if (player1_new_buttons & INPUT_MASK_START) {
-    remainingCards=1;
     initalizeGolfScene();
   }
 }
